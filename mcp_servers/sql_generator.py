@@ -12,12 +12,6 @@ TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 
 app = FastAPI()
 
-SYSTEM_PROMPT = (
-    "You are a senior data engineer skilled in writing SQL. "
-    "Given a question about an employee database, respond ONLY with a valid SQLite SQL query. "
-    "Do not include explanations, markdown, or formatting. Just return plain SQL only."
-)
-
 class QueryInput(BaseModel):
     question: str
     session_id: str
@@ -35,55 +29,6 @@ def get_schema_and_rows():
 
     conn.close()
     return schema, examples
-
-def generate_sql(user_input: str, history: list = []) -> str:
-    schema, examples = get_schema_and_rows()
-
-    FEW_SHOTS = [
-        {"question": "List all employee names", "sql": "SELECT name FROM employee;"},
-        {"question": "How many employees are there?", "sql": "SELECT COUNT(*) FROM employee;"},
-        {"question": "Get employee names and departments", "sql": "SELECT name, department FROM employee;"},
-    ]
-
-    SYSTEM_PROMPT = (
-        "You are a senior data engineer. Write correct SQLite SQL queries to answer questions "
-        "based on the employee database schema and sample data.\n\n"
-        "Only output SQL without explanations or markdown.\n\n"
-        f"Schema:\n{schema}\n\n"
-        f"Sample Rows:\n{examples}\n\n"
-    )
-
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-
-    for shot in FEW_SHOTS:
-        messages.append({"role": "user", "content": shot["question"]})
-        messages.append({"role": "assistant", "content": shot["sql"]})
-
-    for turn in history:
-        messages.append({"role": "user", "content": turn["question"]})
-        messages.append({"role": "assistant", "content": turn["answer"]})
-
-    messages.append({"role": "user", "content": user_input})
-
-    data = {
-        "model": "meta-llama/Meta-Llama-3-70B-Instruct-Turbo",
-        "messages": messages,
-        "temperature": 0.3,
-        "max_tokens": 512,
-    }
-
-    headers = {
-        "Authorization": f"Bearer {TOGETHER_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    try:
-        response = requests.post("https://api.together.xyz/v1/chat/completions", headers=headers, json=data)
-        response_json = response.json()
-        return response_json["choices"][0]["message"]["content"].strip().strip("```sql").strip("```")
-    except Exception as e:
-        print("Error in generate_sql:", e)
-        return "SELECT 'Error';"
 
 def generate_sql(user_input: str, history: list = []) -> str:
     schema, sample_rows = get_schema_and_rows()
