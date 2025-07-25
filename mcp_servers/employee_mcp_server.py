@@ -12,9 +12,6 @@ app = FastAPI()
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 
 def generate_natural_answer(question: str, answer) -> str:
-    """
-    Uses Together AI and LLaMA 3 70B to generate a natural language response.
-    """
     if isinstance(answer, list):
         answer = str(answer)
 
@@ -31,7 +28,7 @@ def generate_natural_answer(question: str, answer) -> str:
             {"role": "system", "content": "Be brief, clear, and helpful."},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.3,
+        "temperature": 0.7,
         "max_tokens": 150,
     }
 
@@ -53,9 +50,6 @@ def generate_natural_answer(question: str, answer) -> str:
         return f"The answer is: {answer}"
 
 def is_valid_sql(sql: str) -> bool:
-    """
-    Validates that the SQL is a safe SELECT statement.
-    """
     try:
         parsed = sqlparse.parse(sql)          
         if not parsed:
